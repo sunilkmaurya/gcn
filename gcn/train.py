@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from gcn.utils import *
 from gcn.models import GCN, MLP
+import pickle
 
 # Set random seed
 seed = 123
@@ -58,6 +59,7 @@ placeholders = {
 # Create model
 model = model_func(placeholders, input_dim=features[2][1], logging=True)
 
+saver = tf.train.Saver()
 # Initialize session
 sess = tf.Session()
 
@@ -66,8 +68,9 @@ sess = tf.Session()
 def evaluate(features, support, labels, mask, placeholders):
     t_test = time.time()
     feed_dict_val = construct_feed_dict(features, support, labels, mask, placeholders)
-    outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
-    return outs_val[0], outs_val[1], (time.time() - t_test)
+    #outs_val = sess.run([model.loss, model.accuracy,model.predicted], feed_dict=feed_dict_val)
+    outs_val = sess.run([model.loss, model.accuracy,model.outputs], feed_dict=feed_dict_val)
+    return outs_val[0], outs_val[1],outs_val[2],(time.time() - t_test)
 
 
 # Init variables
@@ -87,7 +90,7 @@ for epoch in range(FLAGS.epochs):
     outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
 
     # Validation
-    cost, acc, duration = evaluate(features, support, y_val, val_mask, placeholders)
+    cost, acc,_, duration = evaluate(features, support, y_val, val_mask, placeholders)
     cost_val.append(cost)
 
     # Print results
@@ -102,6 +105,9 @@ for epoch in range(FLAGS.epochs):
 print("Optimization Finished!")
 
 # Testing
-test_cost, test_acc, test_duration = evaluate(features, support, y_test, test_mask, placeholders)
+test_cost, test_acc,test_pred, test_duration = evaluate(features, support, y_test, test_mask, placeholders)
 print("Test set results:", "cost=", "{:.5f}".format(test_cost),
       "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+
+f = open("gcn_predicted.file","wb")
+pickle.dump([y_test,test_pred,test_mask],f)

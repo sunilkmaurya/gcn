@@ -66,6 +66,9 @@ class Model(object):
     def _accuracy(self):
         raise NotImplementedError
 
+    def _predicted(self):
+        raise NotImplementedError
+
     def save(self, sess=None):
         if not sess:
             raise AttributeError("TensorFlow session not provided.")
@@ -172,6 +175,8 @@ class GCN(Model):
                                             act=lambda x: x,
                                             dropout=True,
                                             logging=self.logging))
+    def _predicted(self):
+        return self.outputs
 
     def predict(self):
         return tf.nn.softmax(self.outputs)
